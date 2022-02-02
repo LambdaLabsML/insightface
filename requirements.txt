@@ -1,0 +1,17 @@
+numpy
+onnx
+tqdm
+requests
+matplotlib
+Pillow
+scipy
+scikit-learn
+scikit-image
+easydict
+cython
+albumentations
+prettytable
+timm
+albumentations
+onnxruntime
+onnx-simplifier
