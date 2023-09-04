@@ -306,7 +306,6 @@ def scrfd_2p5gkps(**kwargs):
 
 if __name__ == '__main__':
     import glob
-    #detector = SCRFD(model_file='./det.onnx')
     detector = SCRFD(model_file='./det.onnx')
     detector.prepare(-1)
     img_paths = ['tests/data/t3.jpg']
@@ -324,7 +323,7 @@ if __name__ == '__main__':
             print(kpss.shape)
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i]
-            x1,y1,x2,y2,score = bbox.astype(np.int)
+            x1,y1,x2,y2,score = bbox.astype(np.int_)
             cv2.rectangle(img, (x1,y1)  , (x2,y2) , (255,0,0) , 2)
             if kpss is not None:
                 kps = kpss[i]
