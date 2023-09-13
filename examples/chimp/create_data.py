@@ -21,7 +21,7 @@ from insightface.utils import face_align
 from insightface.app import FaceAnalysis
 
 # input folder
-input_image_dir = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/Chimp_40_online"
+input_image_dir = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/Chimp_5000"
 
 # bbox detector
 bbox_detector_path = "/media/ubuntu/home1/deepvoodoo/Chimp/models/scrfd/scrfd_10g.onnx"
@@ -595,6 +595,8 @@ if __name__ == "__main__":
             rotate = 0
             _scale = input_size / (max(w, h) * 1.5)
             aimg, M = face_align.transform(img, center, input_size, _scale, rotate)
+
+            aimg = cv2.cvtColor(aimg, cv2.COLOR_BGR2RGB)
 
             kps = None
             flips = [0, 1] if USE_FLIP else [0]
