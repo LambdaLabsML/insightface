@@ -18,10 +18,10 @@ import pickle
 
 from trainer_synthetics import FaceSynthetics
 from insightface.utils import face_align
-
+from insightface.app import FaceAnalysis
 
 # input folder
-input_image_dir = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/Chimp_40"
+input_image_dir = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/Chimp_40_online"
 
 # bbox detector
 bbox_detector_path = "/media/ubuntu/home1/deepvoodoo/Chimp/models/scrfd/scrfd_10g.onnx"
@@ -69,6 +69,9 @@ flip_parts = (
     [59, 57],
     [60, 56],
 )
+
+app = FaceAnalysis()
+app.prepare(ctx_id=0, det_size=(224, 224))
 
 
 def softmax(z):
@@ -386,6 +389,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--stage", choices=["bbox", "ldmks", "sync", "dataset"], default="bbox"
     )
+    parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
     args = parser.parse_args()
 
     detector_name = bbox_detector_path.split("/")[-1][:-5]
@@ -424,83 +428,30 @@ if __name__ == "__main__":
         # bbox detection
         for img_path in img_paths:
             img = cv2.imread(img_path)
-            for _ in range(1):
-                ta = datetime.datetime.now()
-                bboxes, kpss = detector.detect(img, 0.3, input_size=(640, 640))
-                tb = datetime.datetime.now()
-                print("all cost:", (tb - ta).total_seconds() * 1000)
-            print(img_path, bboxes.shape)
-            if kpss is not None:
-                print(kpss.shape)
-            for i in range(bboxes.shape[0]):
-                bbox = bboxes[i]
-                for j in range(len(bbox)):
-                    if bbox[j] < 0:
-                        bbox[j] = 0
 
-                x1, y1, x2, y2, score = bbox.astype(np.int_)
+            if args.bbox_method == "app":
+                dimg = img.copy()
+                faces = app.get(img, max_num=1)
 
-                # compute the center of the bounding box
-                center_x = int((x1 + x2) / 2.0)
-                center_y = int((y1 + y2) / 2.0)
+                print(img_path)
+                if len(faces) != 1:
+                    continue
+                bbox = faces[0].bbox
+                x1, y1, x2, y2 = bbox.astype(np.int_)
 
-                # cmpute the width and height of the bounding box
-                width = int(x2 - x1)
-                height = int(y2 - y1)
-
-                # find the larger side of the bounding box
-                larger_side = int(max(width, height) * 2.5)
-
-                # get the x1, y1, x2, y2 of the new bounding box, which is a square with the same center
-                x1 = center_x - int(larger_side / 2.0)
-                y1 = center_y - int(larger_side / 2.0)
-                x2 = center_x + int(larger_side / 2.0)
-                y2 = center_y + int(larger_side / 2.0)
-
-                # crop the image to the new bounding box, if the new bounding box is out of the image, then pad the image with 0
-                x_offset = 0
-                y_offset = 0
-
-                if x1 < 0:
-                    x_offset = -x1
-                    x1 = 0
-                if y1 < 0:
-                    y_offset = -y1
-                    y1 = 0
-                if x2 > img.shape[1]:
-                    x2 = img.shape[1]
-                if y2 > img.shape[0]:
-                    y2 = img.shape[0]
-
-                roi = img[y1:y2, x1:x2, :]
-
-                result_image = np.zeros((larger_side, larger_side, 3), dtype=np.uint8)
-
-                # Paste the cropped region into the center of the new image
-                result_image[
-                    y_offset : y_offset + roi.shape[0],
-                    x_offset : x_offset + roi.shape[1],
-                ] = roi
-
-                desired_size = 512
-                result_image = cv2.resize(result_image, (desired_size, desired_size))
+                w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
+                center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
+                rotate = 0
+                _scale = input_size / (max(w, h) * 1.5)
+                aimg, M = face_align.transform(img, center, input_size, _scale, rotate)
 
                 filename = img_path.split("/")[-1]
-                filename = ".".join(filename.split(".")[:-1]) + "_%d.png" % i
+                filename = ".".join(filename.split(".")[:-1]) + "_%d.png" % 0
                 print("output:", filename)
-                cv2.imwrite(output_dir + "/%s" % filename, result_image)
+                cv2.imwrite(output_dir + "/%s" % filename, aimg)
 
-                x1 = larger_side / 2.0 - width / 2.0
-                y1 = larger_side / 2.0 - height / 2.0
-                x2 = larger_side / 2.0 + width / 2.0
-                y2 = larger_side / 2.0 + height / 2.0
-
-                x1 = x1 * desired_size / larger_side
-                y1 = y1 * desired_size / larger_side
-                x2 = x2 * desired_size / larger_side
-                y2 = y2 * desired_size / larger_side
-
-                # write bbox to file x1, y1, x2, y2 in the padded image
+                # write bbox to file
+                # for app detector, the bbox is 0, 0, 255, 255
                 with open(
                     output_dir + "/%s_bbox.txt" % filename[:-4],
                     "w",
@@ -508,17 +459,115 @@ if __name__ == "__main__":
                     f.write(
                         "%d %d %d %d\n"
                         % (
-                            x1,
-                            y1,
-                            x2,
-                            y2,
+                            0,
+                            0,
+                            input_size - 1,
+                            input_size - 1,
                         )
                     )
+
+            else:
+                for _ in range(1):
+                    ta = datetime.datetime.now()
+                    bboxes, kpss = detector.detect(
+                        img, bbox_confidence, input_size=(640, 640)
+                    )
+                    tb = datetime.datetime.now()
+                    print("all cost:", (tb - ta).total_seconds() * 1000)
+                print(img_path, bboxes.shape)
+                if kpss is not None:
+                    print(kpss.shape)
+                for i in range(bboxes.shape[0]):
+                    bbox = bboxes[i]
+                    for j in range(len(bbox)):
+                        if bbox[j] < 0:
+                            bbox[j] = 0
+
+                    x1, y1, x2, y2, score = bbox.astype(np.int_)
+
+                    # compute the center of the bounding box
+                    center_x = int((x1 + x2) / 2.0)
+                    center_y = int((y1 + y2) / 2.0)
+
+                    # cmpute the width and height of the bounding box
+                    width = int(x2 - x1)
+                    height = int(y2 - y1)
+
+                    # find the larger side of the bounding box
+                    larger_side = int(max(width, height) * 2.5)
+
+                    # get the x1, y1, x2, y2 of the new bounding box, which is a square with the same center
+                    x1 = center_x - int(larger_side / 2.0)
+                    y1 = center_y - int(larger_side / 2.0)
+                    x2 = center_x + int(larger_side / 2.0)
+                    y2 = center_y + int(larger_side / 2.0)
+
+                    # crop the image to the new bounding box, if the new bounding box is out of the image, then pad the image with 0
+                    x_offset = 0
+                    y_offset = 0
+
+                    if x1 < 0:
+                        x_offset = -x1
+                        x1 = 0
+                    if y1 < 0:
+                        y_offset = -y1
+                        y1 = 0
+                    if x2 > img.shape[1]:
+                        x2 = img.shape[1]
+                    if y2 > img.shape[0]:
+                        y2 = img.shape[0]
+
+                    roi = img[y1:y2, x1:x2, :]
+
+                    result_image = np.zeros(
+                        (larger_side, larger_side, 3), dtype=np.uint8
+                    )
+
+                    # Paste the cropped region into the center of the new image
+                    result_image[
+                        y_offset : y_offset + roi.shape[0],
+                        x_offset : x_offset + roi.shape[1],
+                    ] = roi
+
+                    desired_size = 512
+                    result_image = cv2.resize(
+                        result_image, (desired_size, desired_size)
+                    )
+
+                    filename = img_path.split("/")[-1]
+                    filename = ".".join(filename.split(".")[:-1]) + "_%d.png" % i
+                    print("output:", filename)
+                    cv2.imwrite(output_dir + "/%s" % filename, result_image)
+
+                    x1 = larger_side / 2.0 - width / 2.0
+                    y1 = larger_side / 2.0 - height / 2.0
+                    x2 = larger_side / 2.0 + width / 2.0
+                    y2 = larger_side / 2.0 + height / 2.0
+
+                    x1 = x1 * desired_size / larger_side
+                    y1 = y1 * desired_size / larger_side
+                    x2 = x2 * desired_size / larger_side
+                    y2 = y2 * desired_size / larger_side
+
+                    # write bbox to file x1, y1, x2, y2 in the padded image
+                    with open(
+                        output_dir + "/%s_bbox.txt" % filename[:-4],
+                        "w",
+                    ) as f:
+                        f.write(
+                            "%d %d %d %d\n"
+                            % (
+                                x1,
+                                y1,
+                                x2,
+                                y2,
+                            )
+                        )
 
     if args.stage == "ldmks":
         # landmark detection
         ldmks_detector = FaceSynthetics.load_from_checkpoint(ldmks_detector_path).cuda()
-
+        ldmks_detector.eval()
         # Use glob to find all .jpg and .png files in the specified directory
         img_paths = glob.glob(os.path.join(output_dir, "*.jpg")) + glob.glob(
             os.path.join(output_dir, "*.png")
@@ -547,7 +596,6 @@ if __name__ == "__main__":
             _scale = input_size / (max(w, h) * 1.5)
             aimg, M = face_align.transform(img, center, input_size, _scale, rotate)
 
-            aimg = cv2.cvtColor(aimg, cv2.COLOR_BGR2RGB)
             kps = None
             flips = [0, 1] if USE_FLIP else [0]
             for flip in flips:
