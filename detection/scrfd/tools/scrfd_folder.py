@@ -13,6 +13,7 @@ import os
 import os.path as osp
 import cv2
 import sys
+import glob
 
 
 def softmax(z):
@@ -324,14 +325,26 @@ if __name__ == "__main__":
 
     detector = SCRFD(model_file="./onnx/scrfd_10g.onnx")
     detector.prepare(-1)
-    img_paths = ["tests/data/t1.jpg"]
+
+    dataset_name = "Chimp_5000"
+    posfix = "_0.3_scrfd10g"
+    os.makedirs("./outputs/" + dataset_name + posfix, exist_ok=True)
+    os.makedirs("./outputs/" + dataset_name + posfix + "_bbox", exist_ok=True)
+
+    # Specify the directory where your image files are located
+    directory_path = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/" + dataset_name
+
+    # Use glob to find all .jpg and .png files in the specified directory
+    img_paths = glob.glob(os.path.join(directory_path, "*.jpg")) + glob.glob(
+        os.path.join(directory_path, "*.png")
+    )
+
     for img_path in img_paths:
         img = cv2.imread(img_path)
 
         for _ in range(1):
             ta = datetime.datetime.now()
-            bboxes, kpss = detector.detect(img, 0.5, input_size=(640, 640))
-            # bboxes, kpss = detector.detect(img, 0.5)
+            bboxes, kpss = detector.detect(img, 0.3, input_size=(640, 640))
             tb = datetime.datetime.now()
             print("all cost:", (tb - ta).total_seconds() * 1000)
         print(img_path, bboxes.shape)
@@ -339,13 +352,84 @@ if __name__ == "__main__":
             print(kpss.shape)
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i]
+            for j in range(len(bbox)):
+                if bbox[j] < 0:
+                    bbox[j] = 0
+
             x1, y1, x2, y2, score = bbox.astype(np.int_)
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            if kpss is not None:
-                kps = kpss[i]
-                for kp in kps:
-                    kp = kp.astype(np.int)
-                    cv2.circle(img, tuple(kp), 1, (0, 0, 255), 2)
-        filename = img_path.split("/")[-1]
-        print("output:", filename)
-        cv2.imwrite("./outputs/%s" % filename, img)
+
+            # compute the center of the bounding box
+            center_x = int((x1 + x2) / 2.0)
+            center_y = int((y1 + y2) / 2.0)
+
+            # cmpute the width and height of the bounding box
+            width = int(x2 - x1)
+            height = int(y2 - y1)
+
+            # find the larger side of the bounding box
+            larger_side = int(max(width, height) * 2.5)
+
+            # get the x1, y1, x2, y2 of the new bounding box, which is a square with the same center
+            x1 = center_x - int(larger_side / 2.0)
+            y1 = center_y - int(larger_side / 2.0)
+            x2 = center_x + int(larger_side / 2.0)
+            y2 = center_y + int(larger_side / 2.0)
+
+            # crop the image to the new bounding box, if the new bounding box is out of the image, then pad the image with 0
+            x_offset = 0
+            y_offset = 0
+
+            if x1 < 0:
+                x_offset = -x1
+                x1 = 0
+            if y1 < 0:
+                y_offset = -y1
+                y1 = 0
+            if x2 > img.shape[1]:
+                x2 = img.shape[1]
+            if y2 > img.shape[0]:
+                y2 = img.shape[0]
+
+            roi = img[y1:y2, x1:x2, :]
+
+            result_image = np.zeros((larger_side, larger_side, 3), dtype=np.uint8)
+
+            # Paste the cropped region into the center of the new image
+            result_image[
+                y_offset : y_offset + roi.shape[0], x_offset : x_offset + roi.shape[1]
+            ] = roi
+
+            desired_size = 512
+            result_image = cv2.resize(result_image, (desired_size, desired_size))
+
+            filename = img_path.split("/")[-1]
+            filename = ".".join(filename.split(".")[:-1]) + "_%d.png" % i
+            print("output:", filename)
+            cv2.imwrite(
+                "./outputs/" + dataset_name + posfix + "/%s" % filename, result_image
+            )
+
+            x1 = larger_side / 2.0 - width / 2.0
+            y1 = larger_side / 2.0 - height / 2.0
+            x2 = larger_side / 2.0 + width / 2.0
+            y2 = larger_side / 2.0 + height / 2.0
+
+            x1 = x1 * desired_size / larger_side
+            y1 = y1 * desired_size / larger_side
+            x2 = x2 * desired_size / larger_side
+            y2 = y2 * desired_size / larger_side
+
+            # write bbox to file x1, y1, x2, y2 in the padded image
+            with open(
+                "./outputs/" + dataset_name + posfix + "_bbox/%s.txt" % filename[:-4],
+                "w",
+            ) as f:
+                f.write(
+                    "%d %d %d %d\n"
+                    % (
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                    )
+                )
