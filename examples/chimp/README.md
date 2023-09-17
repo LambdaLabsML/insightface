@@ -11,8 +11,6 @@ There are multiple face detectors and landmark detectors in this insightface lib
 
 ## Installation
 
-### scrfd face detector
-
 Running the `scrfd` face detector requires some extra dependencies which adds constraint to CDUA/PyTorch version. Here are a couple of verified ways to set up the environment:
 
 **Setup insightface on a CUDA 11.6-11.8 machine**
@@ -36,13 +34,7 @@ cd insightface/detection/scrfd
 
 pip install -r requirements/build.txt
 pip install -v -e .
-pip install onnx
-pip install onnxruntime
-pip install onnx-simplifier
-pip install albumentations==1.3.1
-pip install prettytable
-pip install pycocotools
-pip install opencv-python==4.8.0.76
+pip install -r requirements_add.txt
 ```
 
 **Setup insightface on a CUDA 12.2 machine**
@@ -70,23 +62,8 @@ https://github.com/deepinsight/insightface.git
 cd insightface/detection/scrfd
 
 pip install -r requirements/build.txt
-pip install -v -e .  # or "python setup.py develop"
-pip install onnx
-pip install onnxruntime
-pip install onnx-simplifier
-pip install albumentations==1.3.1
-pip install prettytable
-pip install pycocotools
-pip install opencv-python==4.8.0.76
-```
-
-### Synthetic landmark detector
-
-The [synthetic landmark detector](https://github.com/deepinsight/insightface/tree/master/alignment/synthetics) is very easy to set up.
-
-```
-pip install timm==0.9.7
-pip install pytorch-lightning==1.8
+pip install -v -e .
+pip install -r requirements_add.txt
 ```
 
 ## Model and Dataset Preparation
