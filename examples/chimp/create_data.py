@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Organization  : insightface.ai
-# @Author        : Jia Guo
-# @Time          : 2021-05-04
-# @Function      :
-
 from __future__ import division
 import numpy as np
 import os
@@ -15,28 +9,19 @@ import argparse
 import glob
 import datetime
 import pickle
+import shutil
 
 from trainer_synthetics import FaceSynthetics
 from insightface.utils import face_align
 from insightface.app import FaceAnalysis
 
-# input folder
-input_image_dir = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/Chimp_5000"
-
-# bbox detector
-bbox_detector_path = "/media/ubuntu/home1/deepvoodoo/Chimp/models/scrfd/scrfd_10g.onnx"
-bbox_confidence = 0.3
 
 # lmrk detector
 input_size = 256
 USE_FLIP = False
-ldmks_detector_path = (
-    "/media/ubuntu/home1/deepvoodoo/Chimp/models/synthetic_resnet50d.ckpt"
-)
 
 # dataset
 dataset_output_size = 384
-
 
 flip_parts = (
     [1, 17],
@@ -387,42 +372,62 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--stage", choices=["bbox", "ldmks", "sync", "dataset"], default="bbox"
+        "--input_image_dir",
+        type=str,
+        default="/home/ubuntu/Chimp/datasets/Chimp_40",
     )
+    parser.add_argument(
+        "--bbox_detector_path",
+        type=str,
+        default="/home/ubuntu/Chimp/models/scrfd/scrfd_10g.onnx",
+    )
+    parser.add_argument(
+        "--ldmks_detector_path",
+        type=str,
+        default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
+    )
+    parser.add_argument("--bbox_confidence", type=float, default=0.3)
+    parser.add_argument("--bbox_size_scale", type=float, default=2.5)
+    parser.add_argument("--stage", choices=["bbox", "ldmks", "dataset"], default="bbox")
     parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
+    parser.add_argument("--dataset_postfix", type=str, default="_dataset")
     args = parser.parse_args()
 
-    detector_name = bbox_detector_path.split("/")[-1][:-5]
+    detector_name = args.bbox_detector_path.split("/")[-1][:-5]
 
-    output_dir = input_image_dir + "_" + detector_name + "_" + str(bbox_confidence)
+    output_dir = (
+        args.input_image_dir
+        + "_"
+        + detector_name
+        + "_"
+        + str(args.bbox_confidence)
+        + "_"
+        + str(args.bbox_size_scale)
+    )
     os.makedirs(
         output_dir,
         exist_ok=True,
     )
 
-    render_dir = (
-        input_image_dir + "_" + detector_name + "_" + str(bbox_confidence) + "_render"
-    )
+    render_dir = output_dir + "_render"
     os.makedirs(
         render_dir,
         exist_ok=True,
     )
 
-    dataset_dir = (
-        input_image_dir + "_" + detector_name + "_" + str(bbox_confidence) + "_dataset"
-    )
+    dataset_dir = output_dir + args.dataset_postfix
     os.makedirs(
         dataset_dir,
         exist_ok=True,
     )
 
     if args.stage == "bbox":
-        detector = SCRFD(model_file=bbox_detector_path)
+        detector = SCRFD(model_file=args.bbox_detector_path)
         detector.prepare(-1)
 
         # Use glob to find all .jpg and .png files in the specified directory
-        img_paths = glob.glob(os.path.join(input_image_dir, "*.jpg")) + glob.glob(
-            os.path.join(input_image_dir, "*.png")
+        img_paths = glob.glob(os.path.join(args.input_image_dir, "*.jpg")) + glob.glob(
+            os.path.join(args.input_image_dir, "*.png")
         )
 
         # bbox detection
@@ -470,7 +475,7 @@ if __name__ == "__main__":
                 for _ in range(1):
                     ta = datetime.datetime.now()
                     bboxes, kpss = detector.detect(
-                        img, bbox_confidence, input_size=(640, 640)
+                        img, args.bbox_confidence, input_size=(640, 640)
                     )
                     tb = datetime.datetime.now()
                     print("all cost:", (tb - ta).total_seconds() * 1000)
@@ -494,7 +499,7 @@ if __name__ == "__main__":
                     height = int(y2 - y1)
 
                     # find the larger side of the bounding box
-                    larger_side = int(max(width, height) * 2.5)
+                    larger_side = int(max(width, height) * args.bbox_size_scale)
 
                     # get the x1, y1, x2, y2 of the new bounding box, which is a square with the same center
                     x1 = center_x - int(larger_side / 2.0)
@@ -566,12 +571,12 @@ if __name__ == "__main__":
 
     if args.stage == "ldmks":
         # landmark detection
-        ldmks_detector = FaceSynthetics.load_from_checkpoint(ldmks_detector_path).cuda()
+        ldmks_detector = FaceSynthetics.load_from_checkpoint(
+            args.ldmks_detector_path
+        ).cuda()
         ldmks_detector.eval()
         # Use glob to find all .jpg and .png files in the specified directory
-        img_paths = glob.glob(os.path.join(output_dir, "*.jpg")) + glob.glob(
-            os.path.join(output_dir, "*.png")
-        )
+        img_paths = glob.glob(os.path.join(output_dir, "*.png"))
 
         for img_path in img_paths:
             print(img_path)
@@ -652,27 +657,21 @@ if __name__ == "__main__":
 
             cv2.imwrite(render_dir + "/%s" % filename, dimg)
 
-    if args.stage == "sync":
-        # compare the image filenames in render_dir and output_dir
-        # delete all the images that do not exist in render_dir from the output_dir
+    if args.stage == "dataset":
+        # compare the image filenames in dataset_dir and output_dir
+        # copy all the detection metadata from output_dir to dataset_dir if an image is in dataset_dir
 
-        # Use glob to find all .jpg and .png files in the specified directory
-        img_paths = glob.glob(os.path.join(output_dir, "*.jpg")) + glob.glob(
-            os.path.join(output_dir, "*.png")
-        )
+        img_paths = glob.glob(os.path.join(dataset_dir, "*.png"))
 
         for img_path in img_paths:
             filename = img_path.split("/")[-1]
-            if not os.path.exists(render_dir + "/" + filename):
-                print("delete:", filename)
-                os.remove(img_path)
-
-    if args.stage == "dataset":
-        # create a dataset
-        # Use glob to find all .jpg and .png files in the specified directory
-        img_paths = glob.glob(os.path.join(output_dir, "*.jpg")) + glob.glob(
-            os.path.join(output_dir, "*.png")
-        )
+            source_filename = output_dir + "/" + filename
+            if os.path.exists(source_filename):
+                bbox_path = source_filename.replace(".png", "_bbox.txt")
+                ldmks_path = source_filename.replace(".png", "_ldmks.txt")
+                shutil.copy(bbox_path, dataset_dir)
+                shutil.copy(ldmks_path, dataset_dir)
+                print("cp meta files:", filename)
 
         X = []
         Y = []

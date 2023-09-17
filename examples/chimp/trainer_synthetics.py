@@ -22,6 +22,7 @@ class FaceSynthetics(pl.LightningModule):
         self.backbone = backbone
         self.loss = nn.L1Loss(reduction="mean")
         self.hard_mining = False
+        self.lr = 0.01
 
     def forward(self, x):
         # use forward for inference/predictions
@@ -57,10 +58,10 @@ class FaceSynthetics(pl.LightningModule):
         self.log("test_loss", loss)
 
     def configure_optimizers(self):
-        # return torch.optim.Adam(self.parameters(), lr=0.0002)
-        opt = torch.optim.SGD(
-            self.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005
-        )
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
+        # opt = torch.optim.SGD(
+        #     self.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005
+        # )
 
         def lr_step_func(epoch):
             return 0.1 ** len([m for m in [15, 25, 28] if m <= epoch])
@@ -92,8 +93,15 @@ def cli_main():
     parser.add_argument(
         "--pre-trained-path",
         type=str,
-        default="/media/ubuntu/home1/deepvoodoo/Chimp/models/synthetic_resnet50d.ckpt",
+        default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
     )
+    parser.add_argument(
+        "--output-ckpt-path",
+        type=str,
+        default="/home/ubuntu/Chimp/experiments/synthetics",
+    )
+    parser.add_argument("--num-epochs", default=10, type=int)
+    parser.add_argument("--lr", default=0.00001, type=float)
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
@@ -124,10 +132,10 @@ def cli_main():
     # model
     # ------------
     # model = FaceSynthetics(backbone=args.backbone)
-
     model = FaceSynthetics.load_from_checkpoint(args.pre_trained_path).cuda()
+    model.lr = args.lr
 
-    ckpt_path = "work_dirs/synthetics"
+    ckpt_path = args.output_ckpt_path
     if not os.path.exists(ckpt_path):
         os.makedirs(ckpt_path)
 
@@ -149,8 +157,7 @@ def cli_main():
         logger=TensorBoardLogger(osp.join(ckpt_path, "logs")),
         callbacks=[checkpoint_callback, lr_monitor],
         check_val_every_n_epoch=1,
-        # progress_bar_refresh_rate=1,
-        max_epochs=30,
+        max_epochs=args.num_epochs,
     )
     trainer.fit(model, train_loader, val_loader)
 

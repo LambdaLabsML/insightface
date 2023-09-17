@@ -326,13 +326,13 @@ if __name__ == "__main__":
     detector = SCRFD(model_file="./onnx/scrfd_10g.onnx")
     detector.prepare(-1)
 
-    dataset_name = "Chimp_5000"
+    dataset_name = "Chimp_40"
     posfix = "_0.3_scrfd10g"
     os.makedirs("./outputs/" + dataset_name + posfix, exist_ok=True)
     os.makedirs("./outputs/" + dataset_name + posfix + "_bbox", exist_ok=True)
 
     # Specify the directory where your image files are located
-    directory_path = "/media/ubuntu/home1/deepvoodoo/Chimp/datasets/" + dataset_name
+    directory_path = "/home/ubuntu/Chimp/datasets/" + dataset_name
 
     # Use glob to find all .jpg and .png files in the specified directory
     img_paths = glob.glob(os.path.join(directory_path, "*.jpg")) + glob.glob(
