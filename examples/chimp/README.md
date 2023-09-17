@@ -114,7 +114,7 @@ python create_data.py \
 --bbox_detector_path /home/ubuntu/Chimp/models/scrfd/scrfd_10g.onnx
 ```
 
-The output will be saved as `_bbox.txt` files in `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. For example, `Chimp_40_diff_scrfd_10g_0.3_2.5/image00001_bbox.txt`.
+The output will be saved as `_bbox.txt` files in `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. For example, `Chimp_40_scrfd_10g_0.3_2.5/image00001_bbox.txt`.
 
 ### Landmark detection
 
