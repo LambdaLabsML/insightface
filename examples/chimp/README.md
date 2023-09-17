@@ -127,12 +127,12 @@ python create_data.py \
 ```
 
 The output will be saved as `_ldmks.txt` files in
-`<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. In this example, `Chimp_40_diff_scrfd_10g_0.3_2.5/image00001_ldmks.txt`
+`<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. In this example, `Chimp_40_scrfd_10g_0.3_2.5/image00001_ldmks.txt`
 
-This step will also save the rendered landmarks in a different folder `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_render`. In this example, `Chimp_40_diff_scrfd_10g_0.3_2.5_render`.
+This step will also save the rendered landmarks in a different folder `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_render`. In this example, `Chimp_40_scrfd_10g_0.3_2.5_render`.
 
 It will also create an empty "dataset" folder for a dataset of high-quality detections `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_dataset`. In this example,
-`Chimp_40_diff_scrfd_10g_0.3_2.5_dataset`.
+`Chimp_40_scrfd_10g_0.3_2.5_dataset`.
 
 ### Select High-quality landmarks and create a dataset for finetune
 
