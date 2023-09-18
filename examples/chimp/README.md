@@ -42,6 +42,7 @@ pip install -r requirements_add.txt
 CUDA 12.2 is too new for this. A walk-around is to create a conda environment (tested with conda 4.12.0)
 
 Fist, install miniconda
+
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 chmod +x Miniconda3-latest-Linux-x86_64.sh
@@ -52,11 +53,13 @@ source ~/.bashrc
 ```
 
 Verify conda install:
+
 ```
 conda --version
 ```
 
 Environment setup:
+
 ```
 sudo apt-get install python3-pybind11
 
@@ -183,4 +186,13 @@ python create_data.py \
 --stage ldmks \
 --input_image_dir /home/ubuntu/Chimp/datasets/Chimp_40_cp \
 --ldmks_detector_path /home/ubuntu/Chimp/experiments/synthetics/<last-ckpt>
+```
+
+## Convert to onnx
+
+```
+cd insightface/examples && \
+python torch2onnx.py \
+/home/ubuntu/Chimp/experiments/synthetics/<last-ckpt> \
+--output /home/ubuntu/Chimp/models
 ```
