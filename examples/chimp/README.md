@@ -64,11 +64,14 @@ sudo apt-get install python3-pybind11
 
 conda create -n insightface python=3.8.10
 conda activate insightface
-conda install cudatoolkit=11.6
-conda install -c "nvidia/label/cuda-11.6.0" cuda-nvcc
+conda install cudatoolkit # 11.6 not found
+conda install -c "nvidia/label/cuda-11.8.0" cuda-nvcc
 
 pip install --upgrade pip
-pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu116
+pip install torch torchvision torchaudio
+
+#pip install torch==1.12.1+cu118
+#torchvision==0.13.1+cu118 torchaudio==0.12.1 #--extra-index-url https://download.pytorch.#org/whl/cu118
 
 # for rich to be found
 export PYTHONPATH=$PYTHONPATH:/home/ubuntu/anaconda3/envs/insightface/lib/python3.8/site-packages
