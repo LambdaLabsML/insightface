@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 import timm
 from datasets.dataset_synthetics import FaceDataset, DataLoaderX
@@ -123,15 +124,16 @@ def cli_main():
             mode='min',
             )
     lr_monitor = LearningRateMonitor(logging_interval='step')
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     trainer = pl.Trainer(
         gpus = args.num_gpus,
         accelerator="ddp",
         benchmark=True,
 		logger=TensorBoardLogger(osp.join(ckpt_path, 'logs')),
-        callbacks=[checkpoint_callback, lr_monitor],
+        callbacks=[checkpoint_callback, lr_monitor, early_stopping],
         check_val_every_n_epoch=1,
         progress_bar_refresh_rate=1,
-        max_epochs=30,
+        max_epochs=1000,
     )
     trainer.fit(model, train_loader, val_loader)
 
