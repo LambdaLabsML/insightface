@@ -29,7 +29,9 @@ pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 torchaudio==0.12.1 --e
 pip install -U openmim
 mim install mmcv-full==1.5.0
 
-https://github.com/deepinsight/insightface.git
+#https://github.com/deepinsight/insightface.git
+# Did you mean...?
+git clone https://github.com/LambdaLabsML/insightface.git
 cd insightface/detection/scrfd
 
 pip install -r requirements/build.txt
@@ -41,6 +43,21 @@ pip install -r requirements_add.txt
 
 CUDA 12.2 is too new for this. A walk-around is to create a conda environment (tested with conda 4.12.0)
 
+Fist, install miniconda
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+chmod +x Miniconda3-latest-Linux-x86_64.sh
+./Miniconda3-latest-Linux-x86_64.sh -b
+echo 'export PATH="$HOME/miniconda3/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Verify conda install:
+```
+conda --version
+```
+
+Environment setup:
 ```
 sudo apt-get install python3-pybind11
 
@@ -58,7 +75,9 @@ export PYTHONPATH=$PYTHONPATH:/home/ubuntu/anaconda3/envs/insightface/lib/python
 pip install -U openmim
 pip install mmcv-full==1.5.0 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12/index.html
 
-https://github.com/deepinsight/insightface.git
+#https://github.com/deepinsight/insightface.git
+# Did you mean...?
+git clone https://github.com/LambdaLabsML/insightface.git
 cd insightface/detection/scrfd
 
 pip install -r requirements/build.txt
