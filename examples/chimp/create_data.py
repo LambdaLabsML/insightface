@@ -387,7 +387,7 @@ if __name__ == "__main__":
         default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
     )
     parser.add_argument("--bbox_confidence", type=float, default=0.3)
-    parser.add_argument("--bbox_size_scale", type=float, default=2.5)
+    parser.add_argument("--bbox_size_scale", type=float, default=1.5)
     parser.add_argument("--stage", choices=["bbox", "ldmks", "dataset"], default="bbox")
     parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
     parser.add_argument("--dataset_postfix", type=str, default="_dataset")
@@ -677,7 +677,11 @@ if __name__ == "__main__":
         Y = []
 
         for img_path in img_paths:
-            img = cv2.imread(img_path)
+            # get the image without landmark rendered
+            filename = img_path.split("/")[-1]
+            source_filename = output_dir + "/" + filename
+            img = cv2.imread(source_filename)
+
             dimg = img.copy()
             ylines = open(img_path.replace(".png", "_ldmks.txt")).readlines()
             ylines = ylines[:68]
@@ -702,7 +706,7 @@ if __name__ == "__main__":
             w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
             center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
             rotate = 0
-            _scale = dataset_output_size / (max(w, h) * 1.5)
+            _scale = dataset_output_size / (max(w, h) * args.bbox_size_scale)
             aimg, M = face_align.transform(
                 dimg, center, dataset_output_size, _scale, rotate
             )
@@ -711,7 +715,6 @@ if __name__ == "__main__":
             x = img_path.split("/")[-1]
             x = x.replace("png", "jpg")
             X.append(x)
-
             y = []
             for k in range(pred.shape[0]):
                 y.append((pred[k][0], pred[k][1]))
