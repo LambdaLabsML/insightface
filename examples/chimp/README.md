@@ -11,7 +11,7 @@ There are multiple face detectors and landmark detectors in this insightface lib
 
 ## Installation
 
-Running the `scrfd` face detector requires some extra dependencies which adds constraint to CDUA/PyTorch version. Here are a couple of verified ways to set up the environment:
+Running the `scrfd` face detector requires some extra dependencies which adds constraint to CUDA/PyTorch version. Here are a couple of verified ways to set up the environment:
 
 **Setup insightface on a CUDA 11.6-11.8 machine**
 
