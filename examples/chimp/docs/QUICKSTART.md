@@ -45,7 +45,7 @@ storage
 ```
 
 Data sets:
-- `chimp_40` [][download](https://drive.google.com/file/d/1jcj1oafUDKY2su8PGncWwAiN6MMdlwHm/view)]
+- `chimp_40` (ask DV for datasets)
 
 Models
 - `scrfd_10g.onnx`[[download](https://drive.google.com/file/d/1t4xd9tBTY4AQMSv2hXnaSwHAuZgwV2Ew/view?usp=sharing)]
