@@ -54,7 +54,8 @@ Models
 If for some reason you need to re-generate the onnx file for the scrdf_10g bbox model, refer to [this guide](PrepareONNX.md)
 The model to convert to onnx is available here: [`model.path`](https://onedrive.live.com/?authkey=%21AArBOLBe%5FaRpryg&id=4A83B6B633B029CC%215541&cid=4A83B6B633B029CC)
 
-### Inference
+
+### Infering landmark positions from input images
 
 Make sure environment is activated
 
@@ -66,7 +67,6 @@ source .venv-insightface/bin/activate
 export root_dir="/home/ubuntu/insightface"
 export models_dir="${root_dir}/insightface_assets/models"
 export img_dir="${root_dir}/insightface_assets/data/chimp_40"
-
 
 # Step 1: bbox (required)
 python "${root_dir}/insightface/examples/chimp/create_data.py" \
@@ -82,7 +82,6 @@ python "${root_dir}/insightface/examples/chimp/create_data.py" \
 --ldmks_detector_path "${models_dir}/synthetic_resnet50d.ckpt" \
 --bbox_detector_path "${models_dir}/scrfd_10g.onnx" # ldkms should run bbox detection automatically but it doesnt ?
 ```
-
 ### Finetuning
 
 Make sure environment is activated
