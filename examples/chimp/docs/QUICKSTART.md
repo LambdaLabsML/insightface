@@ -67,9 +67,17 @@ export root_dir="/home/ubuntu/insightface"
 export models_dir="${root_dir}/insightface_assets/models"
 export img_dir="${root_dir}/insightface_assets/data/chimp_40"
 
+# Step 1: bbox (required)
 python "${root_dir}/insightface/examples/chimp/create_data.py" \
-  --stage 'ldmks' \
-  --input_image_dir "${img_dir}" \
-  --ldmks_detector_path "${models_dir}/synthetic_resnet50d.ckpt" \
-  --bbox_detector_path "${models_dir}/scrdf_10g.onnx"
+--stage bbox \
+--bbox-method scrfd \
+--input_image_dir "${img_dir}" \
+--bbox_detector_path "${models_dir}/scrdf_10g.onnx"
+
+# Step 2: ldmks
+python "${root_dir}/insightface/examples/chimp/create_data.py" \
+--stage ldmks \
+--input_image_dir "${img_dir}" \
+--ldmks_detector_path "${models_dir}/synthetic_resnet50d.ckpt" \
+--bbox_detector_path "${models_dir}/scrdf_10g.onnx" # ldkms should run bbox detection automatically but it doesnt ?
 ```
