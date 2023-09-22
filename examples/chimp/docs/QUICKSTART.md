@@ -54,7 +54,7 @@ Models
 If for some reason you need to re-generate the onnx file for the scrdf_10g bbox model, refer to [this guide](PrepareONNX.md)
 The model to convert to onnx is available here: [`model.path`](https://onedrive.live.com/?authkey=%21AArBOLBe%5FaRpryg&id=4A83B6B633B029CC%215541&cid=4A83B6B633B029CC)
 
-### Training
+### Infering landmark positions from input images
 
 Make sure environment is activated
 
