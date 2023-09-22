@@ -55,8 +55,8 @@ flip_parts = (
     [60, 56],
 )
 
-app = FaceAnalysis()
-app.prepare(ctx_id=0, det_size=(224, 224))
+# app = FaceAnalysis()
+# app.prepare(ctx_id=0, det_size=(224, 224))
 
 
 def softmax(z):
@@ -429,7 +429,6 @@ if __name__ == "__main__":
         img_paths = glob.glob(os.path.join(args.input_image_dir, "*.jpg")) + glob.glob(
             os.path.join(args.input_image_dir, "*.png")
         )
-
         # bbox detection
         for img_path in img_paths:
             img = cv2.imread(img_path)
@@ -442,7 +441,7 @@ if __name__ == "__main__":
                 if len(faces) != 1:
                     continue
                 bbox = faces[0].bbox
-                x1, y1, x2, y2 = bbox.astype(np.int_)
+                x1, y1, x2, y2 = bbox.astype(int)
 
                 w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
                 center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
@@ -488,7 +487,7 @@ if __name__ == "__main__":
                         if bbox[j] < 0:
                             bbox[j] = 0
 
-                    x1, y1, x2, y2, score = bbox.astype(np.int_)
+                    x1, y1, x2, y2, score = bbox.astype(int)
 
                     # compute the center of the bounding box
                     center_x = int((x1 + x2) / 2.0)
@@ -570,6 +569,10 @@ if __name__ == "__main__":
                         )
 
     if args.stage == "ldmks":
+        
+        print("[+] landmark detection mode")
+        
+        
         # landmark detection
         ldmks_detector = FaceSynthetics.load_from_checkpoint(
             args.ldmks_detector_path
@@ -577,6 +580,8 @@ if __name__ == "__main__":
         ldmks_detector.eval()
         # Use glob to find all .jpg and .png files in the specified directory
         img_paths = glob.glob(os.path.join(output_dir, "*.png"))
+        
+        
 
         for img_path in img_paths:
             print(img_path)
@@ -650,7 +655,7 @@ if __name__ == "__main__":
                     f.write("%f %f\n" % (kps[l][0], kps[l][1]))
 
             # render image with landmarks
-            kps = kps.astype(np.int)
+            kps = kps.astype(int)
             for l in range(kps.shape[0]):
                 color = (0, 0, 255)
                 cv2.circle(dimg, (kps[l][0], kps[l][1]), 1, color, 2)
