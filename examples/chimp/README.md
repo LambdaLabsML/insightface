@@ -11,7 +11,7 @@ There are multiple face detectors and landmark detectors in this insightface lib
 
 ## Installation
 
-Running the `scrfd` face detector requires some extra dependencies which adds constraint to CDUA/PyTorch version. Here are a couple of verified ways to set up the environment:
+Running the `scrfd` face detector requires some extra dependencies which adds constraint to CUDA/PyTorch version. Here are a couple of verified ways to set up the environment:
 
 **Setup insightface on a CUDA 11.6-11.8 machine**
 
@@ -42,6 +42,7 @@ pip install -r requirements_add.txt
 CUDA 12.2 is too new for this. A walk-around is to create a conda environment (tested with conda 4.12.0)
 
 Fist, install miniconda
+
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 chmod +x Miniconda3-latest-Linux-x86_64.sh
@@ -52,11 +53,13 @@ source ~/.bashrc
 ```
 
 Verify conda install:
+
 ```
 conda --version
 ```
 
 Environment setup:
+
 ```
 sudo apt-get install python3-pybind11
 
@@ -130,7 +133,7 @@ python create_data.py \
 --bbox_detector_path /home/ubuntu/Chimp/models/scrfd/scrfd_10g.onnx
 ```
 
-The output will be saved as `_bbox.txt` files in `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. For example, `Chimp_40_scrfd_10g_0.3_2.5/image00001_bbox.txt`.
+The output will be saved as `_bbox.txt` files in `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. For example, `Chimp_40_scrfd_10g_0.3_1.5/image00001_bbox.txt`.
 
 ### Landmark detection
 
@@ -143,12 +146,12 @@ python create_data.py \
 ```
 
 The output will be saved as `_ldmks.txt` files in
-`<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. In this example, `Chimp_40_scrfd_10g_0.3_2.5/image00001_ldmks.txt`
+`<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>`. In this example, `Chimp_40_scrfd_10g_0.3_1.5/image00001_ldmks.txt`
 
-This step will also save the rendered landmarks in a different folder `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_render`. In this example, `Chimp_40_scrfd_10g_0.3_2.5_render`.
+This step will also save the rendered landmarks in a different folder `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_render`. In this example, `Chimp_40_scrfd_10g_0.3_1.5_render`.
 
 It will also create an empty "dataset" folder for a dataset of high-quality detections `<input_image_dir>_<detetor_name>_<bbox_confidence>_<bbox_size_scale>_dataset`. In this example,
-`Chimp_40_scrfd_10g_0.3_2.5_dataset`.
+`Chimp_40_scrfd_10g_0.3_1.5_dataset`.
 
 ### Select High-quality landmarks and create a dataset for finetune
 
@@ -166,7 +169,7 @@ Use the following command to finetune the `synthetic_resnet50d` landmark detecto
 
 ```
 python trainer_synthetics.py --batch_size 8 \
---root /home/ubuntu/Chimp/datasets/Chimp_40_scrfd_10g_0.3_2.5_dataset \
+--root /home/ubuntu/Chimp/datasets/Chimp_40_scrfd_10g_0.3_1.5_dataset \
 --pre-trained-path /home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt \
 --output-ckpt-path /home/ubuntu/Chimp/experiments/synthetics \
 --num-epochs 10 \
@@ -178,9 +181,18 @@ python trainer_synthetics.py --batch_size 8 \
 
 ```
 cp -r /home/ubuntu/Chimp/datasets/Chimp_40 /home/ubuntu/Chimp/datasets/Chimp_40_cp && \
-cp -r /home/ubuntu/Chimp/datasets/Chimp_40_scrfd_10g_0.3_2.5 /home/ubuntu/Chimp/datasets/Chimp_40_cp_scrfd_10g_0.3_2.5 && \
+cp -r /home/ubuntu/Chimp/datasets/Chimp_40_scrfd_10g_0.3_1.5 /home/ubuntu/Chimp/datasets/Chimp_40_cp_scrfd_10g_0.3_1.5 && \
 python create_data.py \
 --stage ldmks \
 --input_image_dir /home/ubuntu/Chimp/datasets/Chimp_40_cp \
 --ldmks_detector_path /home/ubuntu/Chimp/experiments/synthetics/<last-ckpt>
+```
+
+## Convert to onnx
+
+```
+cd insightface/examples && \
+python torch2onnx.py \
+/home/ubuntu/Chimp/experiments/synthetics/<last-ckpt> \
+--output /home/ubuntu/Chimp/models
 ```

@@ -55,8 +55,8 @@ flip_parts = (
     [60, 56],
 )
 
-app = FaceAnalysis()
-app.prepare(ctx_id=0, det_size=(224, 224))
+# app = FaceAnalysis()
+# app.prepare(ctx_id=0, det_size=(224, 224))
 
 
 def softmax(z):
@@ -387,7 +387,7 @@ if __name__ == "__main__":
         default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
     )
     parser.add_argument("--bbox_confidence", type=float, default=0.3)
-    parser.add_argument("--bbox_size_scale", type=float, default=2.5)
+    parser.add_argument("--bbox_size_scale", type=float, default=1.5)
     parser.add_argument("--stage", choices=["bbox", "ldmks", "dataset"], default="bbox")
     parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
     parser.add_argument("--dataset_postfix", type=str, default="_dataset")
@@ -429,7 +429,6 @@ if __name__ == "__main__":
         img_paths = glob.glob(os.path.join(args.input_image_dir, "*.jpg")) + glob.glob(
             os.path.join(args.input_image_dir, "*.png")
         )
-
         # bbox detection
         for img_path in img_paths:
             img = cv2.imread(img_path)
@@ -442,7 +441,7 @@ if __name__ == "__main__":
                 if len(faces) != 1:
                     continue
                 bbox = faces[0].bbox
-                x1, y1, x2, y2 = bbox.astype(np.int_)
+                x1, y1, x2, y2 = bbox.astype(int)
 
                 w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
                 center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
@@ -488,7 +487,7 @@ if __name__ == "__main__":
                         if bbox[j] < 0:
                             bbox[j] = 0
 
-                    x1, y1, x2, y2, score = bbox.astype(np.int_)
+                    x1, y1, x2, y2, score = bbox.astype(int)
 
                     # compute the center of the bounding box
                     center_x = int((x1 + x2) / 2.0)
@@ -570,6 +569,10 @@ if __name__ == "__main__":
                         )
 
     if args.stage == "ldmks":
+        
+        print("[+] landmark detection mode")
+        
+        
         # landmark detection
         ldmks_detector = FaceSynthetics.load_from_checkpoint(
             args.ldmks_detector_path
@@ -577,6 +580,8 @@ if __name__ == "__main__":
         ldmks_detector.eval()
         # Use glob to find all .jpg and .png files in the specified directory
         img_paths = glob.glob(os.path.join(output_dir, "*.png"))
+        
+        
 
         for img_path in img_paths:
             print(img_path)
@@ -650,7 +655,7 @@ if __name__ == "__main__":
                     f.write("%f %f\n" % (kps[l][0], kps[l][1]))
 
             # render image with landmarks
-            kps = kps.astype(np.int)
+            kps = kps.astype(int)
             for l in range(kps.shape[0]):
                 color = (0, 0, 255)
                 cv2.circle(dimg, (kps[l][0], kps[l][1]), 1, color, 2)
@@ -677,7 +682,11 @@ if __name__ == "__main__":
         Y = []
 
         for img_path in img_paths:
-            img = cv2.imread(img_path)
+            # get the image without landmark rendered
+            filename = img_path.split("/")[-1]
+            source_filename = output_dir + "/" + filename
+            img = cv2.imread(source_filename)
+
             dimg = img.copy()
             ylines = open(img_path.replace(".png", "_ldmks.txt")).readlines()
             ylines = ylines[:68]
@@ -702,7 +711,7 @@ if __name__ == "__main__":
             w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
             center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
             rotate = 0
-            _scale = dataset_output_size / (max(w, h) * 1.5)
+            _scale = dataset_output_size / (max(w, h) * args.bbox_size_scale)
             aimg, M = face_align.transform(
                 dimg, center, dataset_output_size, _scale, rotate
             )
@@ -711,7 +720,6 @@ if __name__ == "__main__":
             x = img_path.split("/")[-1]
             x = x.replace("png", "jpg")
             X.append(x)
-
             y = []
             for k in range(pred.shape[0]):
                 y.append((pred[k][0], pred[k][1]))
