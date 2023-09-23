@@ -84,35 +84,121 @@ python "${root_dir}/insightface/examples/chimp/create_data.py" \
 ```
 ### Finetuning
 
+#### Data preparation
+
+Inference gets us:
+```bash
+storage
+|-- insightface_assets
+|		|-- data
+            |-- <input_image_dir>   # eg: chimp_40
+            |
+            |   # output_dir; eg: chimp_40_scrfd_10g_0.3_1.5
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale> 
+            |    |-- *.bbx.txt
+            |    |-- *.ldmks.txt
+            |    |-- *.png
+            |
+            |   # render_dir; contains original image with landmark drawn on them for preview
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_render 
+                 |-- *.png
+``` 
+
+
+We need to prepare a dataset dir for finetuning such as:
+
+```bash
+storage
+|-- insightface_assets
+        |-- data
+        |   |   # dataset_dir; eg: chimp_40_scrfd_10g_0.3_1.5_dataset
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_<dataset_postfix>
+                |-- annot.pkl       # pickled landmark data
+                |-- *_bbox.txt      # bbox data as txt file
+                |-- *_ldkms.txt     # ldkms data as txt file
+                |-- *_img.png       # source image
+                |-- *_img.jpg       # bbox scaled / cropped image
+
+```
+
+The `.pkl` that contains X, Y where:
+* X is list of .png image file names
+* Y is list of 68 landmark coordinate pairs (one per file)
+
+The current workflow for doing that is as follow:
+1. Manually create the _dataset directory: `<input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_<dataset_postfix>`
+```bash
+storage
+|-- insightface_assets
+        |-- data
+        |   |   # dataset_dir; eg: chimp_40_scrfd_10g_0.3_1.5_dataset
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_<dataset_postfix>
+```
+
+2. Copy the render images of reference images and filter down to the images you want in your training dataset
+
+```
+storage
+|-- insightface_assets
+        |-- data
+        |   |   # dataset_dir; eg: chimp_40_scrfd_10g_0.3_1.5_dataset
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_<dataset_postfix>
+                |-- *_img.png       # renders image filtered down to what Im keeping for training
+```
+
+
+3. Run data preparation script below to
+    * Create `annot.pkl`
+    * Copy ldmks and bbox data from the `output_dir`
+
+```
+storage
+|-- insightface_assets
+        |-- data
+        |   |   # dataset_dir; eg: chimp_40_scrfd_10g_0.3_1.5_dataset
+            |-- <input_image_dir>_<detector>_<bbox_confidence>_<bbox_scale>_<dataset_postfix>
+                |-- annot.pkl       # pickled landmark data
+                |-- *_bbox.txt      # bbox data as txt file
+                |-- *_ldkms.txt     # ldkms data as txt file
+                |-- *_img.png       # source image
+                |-- *_img.jpg       # bbox scaled / cropped image
+```
+
+To run the data preparation script:
+
 Make sure environment is activated
 ```bash
 source .venv-insightface/bin/activate
 ```
 
-
-Prepare a training dataset; for instance
 ```bash
-storage
-|-- insightface_assets
-		|-- data
-		|   |-- chimp_50
-            |-- 0_bbox.txt
-            |-- 0_ldkms.txt
-            |-- 0_img.png
-
+export root_dir="/home/ubuntu/insightface"
+python "${root_dir}/insightface/examples/chimp/create_data.py" \
+--stage dataset \
+--input_image_dir "${root_dir}/insightface_assets/data/chimp_40" \
+--bbox_confidence 0.3 \
+--bbox_size_scale 1.5 \
+--dataset_postfix _dataset
 ```
 
-Finetuning:
-```bash
-export img_dir=/home/ubuntu/insightface/insightface_assets/data/chimp_40_scrfd_10g_0.3_1.5
-export model_dir=/home/ubuntu/insightface/insightface_assets/models
 
-python trainer_synthetics.py \
+#### Training
+
+Make sure environment is activated
+```bash
+source .venv-insightface/bin/activate
+```
+
+```bash
+export root_dir=/home/ubuntu/insightface
+export dataset_dir="${root_dir}/insightface_assets/data/chimp_40_scrfd_10g_0.3_1.5_dataset"
+export model_dir="${root_dir}/insightface_assets/models"
+
+python "${root_dir}/insightface/examples/chimp/trainer_synthetics.py" \
 --batch_size 8 \
---root "${img_dir}" \
+--root "${dataset_dir}" \
 --pre-trained-path "${model_dir}/synthetic_resnet50d.ckpt" \
 --output-ckpt-path "${model_dir}/synthetic_resnet50d_ft0.ckpt" \
---early_stopping True \
 --num-epochs 1000 \
 --lr 0.00001 \
 --num-gpus 1

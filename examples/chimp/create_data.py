@@ -363,6 +363,85 @@ def scrfd_2p5gkps(**kwargs):
     return get_scrfd("2p5gkps", download=True, **kwargs)
 
 
+
+def copy_detection_metadata(dataset_dir, output_dir):
+    """
+    Compare the image filenames in dataset_dir and output_dir.
+    If a match is found, copy bounding box and landmark metadata from output_dir to dataset_dir.
+    """
+    img_paths = glob.glob(os.path.join(dataset_dir, "*.png"))
+    for img_path in img_paths:
+        filename = os.path.basename(img_path)
+        source_filename = os.path.join(output_dir, filename)
+        if os.path.exists(source_filename):
+            bbox_path = source_filename.replace(".png", "_bbox.txt")
+            ldmks_path = source_filename.replace(".png", "_ldmks.txt")
+            shutil.copy(bbox_path, dataset_dir)
+            shutil.copy(ldmks_path, dataset_dir)
+            print("cp meta files:", filename)
+
+
+def process_images(dataset_dir, dataset_output_size=dataset_output_size):
+    """
+    Process images: align the faces, save the images and their landmarks.
+    """
+    img_paths = glob.glob(os.path.join(dataset_dir, "*.png"))
+    X, Y = [], []
+
+    for img_path in img_paths:
+        img = cv2.imread(img_path)
+        landmarks = load_landmarks(img_path)
+        bbox = load_bounding_box(img_path)
+        aimg, pred = align_face_and_landmarks(img, bbox, landmarks, dataset_output_size)
+        
+        x = os.path.basename(img_path).replace("png", "jpg")
+        X.append(x)
+        Y.append([(point[0], point[1]) for point in pred])
+        cv2.imwrite(os.path.join(dataset_dir, x), aimg)
+
+    with open(os.path.join(dataset_dir, "annot.pkl"), "wb") as pfile:
+        pickle.dump((X, Y), pfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_landmarks(img_path):
+    """
+    Load facial landmarks from the corresponding file.
+    """
+    ylines = open(img_path.replace(".png", "_ldmks.txt")).readlines()
+    ylines = ylines[:68]
+    return [tuple(map(float, yline.strip().split())) for yline in ylines]
+
+
+def load_bounding_box(img_path):
+    """
+    Load bounding box from the corresponding file.
+    """
+    bbox_path = img_path.replace(".png", "_bbox.txt")
+    with open(bbox_path, "r") as f:
+        bbox = list(map(int, f.readline().rstrip("\n").split()))
+    return np.array(bbox)
+
+
+def align_face_and_landmarks(img, bbox, landmarks, output_size):
+    """
+    Align face in the image based on the bounding box and landmarks.
+    """
+    dimg = img.copy()
+    pred = np.array(landmarks)
+
+    w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
+    center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
+    rotate = 0
+    _scale = output_size / (max(w, h) * 1.5)
+    aimg, M = face_align.transform(dimg, center, output_size, _scale, rotate)
+    pred = face_align.trans_points(pred, M)
+
+    return aimg, pred
+
+
+
+
+
 if __name__ == "__main__":
     # take a folder of images (frames) as input
     # output a folder of images with bbox and landmark annotations
@@ -387,7 +466,7 @@ if __name__ == "__main__":
         default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
     )
     parser.add_argument("--bbox_confidence", type=float, default=0.3)
-    parser.add_argument("--bbox_size_scale", type=float, default=1.5)
+    parser.add_argument("--bbox_size_scale", type=float, default=2.5)
     parser.add_argument("--stage", choices=["bbox", "ldmks", "dataset"], default="bbox")
     parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
     parser.add_argument("--dataset_postfix", type=str, default="_dataset")
@@ -429,6 +508,7 @@ if __name__ == "__main__":
         img_paths = glob.glob(os.path.join(args.input_image_dir, "*.jpg")) + glob.glob(
             os.path.join(args.input_image_dir, "*.png")
         )
+
         # bbox detection
         for img_path in img_paths:
             img = cv2.imread(img_path)
@@ -569,10 +649,6 @@ if __name__ == "__main__":
                         )
 
     if args.stage == "ldmks":
-        
-        print("[+] landmark detection mode")
-        
-        
         # landmark detection
         ldmks_detector = FaceSynthetics.load_from_checkpoint(
             args.ldmks_detector_path
@@ -580,8 +656,6 @@ if __name__ == "__main__":
         ldmks_detector.eval()
         # Use glob to find all .jpg and .png files in the specified directory
         img_paths = glob.glob(os.path.join(output_dir, "*.png"))
-        
-        
 
         for img_path in img_paths:
             print(img_path)
@@ -666,65 +740,5 @@ if __name__ == "__main__":
         # compare the image filenames in dataset_dir and output_dir
         # copy all the detection metadata from output_dir to dataset_dir if an image is in dataset_dir
 
-        img_paths = glob.glob(os.path.join(dataset_dir, "*.png"))
-
-        for img_path in img_paths:
-            filename = img_path.split("/")[-1]
-            source_filename = output_dir + "/" + filename
-            if os.path.exists(source_filename):
-                bbox_path = source_filename.replace(".png", "_bbox.txt")
-                ldmks_path = source_filename.replace(".png", "_ldmks.txt")
-                shutil.copy(bbox_path, dataset_dir)
-                shutil.copy(ldmks_path, dataset_dir)
-                print("cp meta files:", filename)
-
-        X = []
-        Y = []
-
-        for img_path in img_paths:
-            # get the image without landmark rendered
-            filename = img_path.split("/")[-1]
-            source_filename = output_dir + "/" + filename
-            img = cv2.imread(source_filename)
-
-            dimg = img.copy()
-            ylines = open(img_path.replace(".png", "_ldmks.txt")).readlines()
-            ylines = ylines[:68]
-            y = []
-            for yline in ylines:
-                lmk = [float(x) for x in yline.strip().split()]
-                y.append(tuple(lmk))
-            pred = np.array(y)
-
-            # load bounding box from file
-            bbox_path = img_path.replace(".png", "_bbox.txt")
-            with open(
-                os.path.join(bbox_path),
-                "r",
-            ) as f:
-                # read line and remove the newline character
-                bbox = f.readline().rstrip("\n").split(" ")
-                bbox = [int(i) for i in bbox]
-
-            bbox = np.array(bbox)
-
-            w, h = (bbox[2] - bbox[0]), (bbox[3] - bbox[1])
-            center = (bbox[2] + bbox[0]) / 2, (bbox[3] + bbox[1]) / 2
-            rotate = 0
-            _scale = dataset_output_size / (max(w, h) * args.bbox_size_scale)
-            aimg, M = face_align.transform(
-                dimg, center, dataset_output_size, _scale, rotate
-            )
-            pred = face_align.trans_points(pred, M)
-
-            x = img_path.split("/")[-1]
-            x = x.replace("png", "jpg")
-            X.append(x)
-            y = []
-            for k in range(pred.shape[0]):
-                y.append((pred[k][0], pred[k][1]))
-            Y.append(y)
-            cv2.imwrite("%s/%s" % (dataset_dir, x), aimg)
-
-        with open(osp.join(dataset_dir, "annot.pkl"), "wb") as pfile:
-            pickle.dump((X, Y), pfile, protocol=pickle.HIGHEST_PROTOCOL)
+         copy_detection_metadata(dataset_dir, output_dir)
+         process_images(dataset_dir)
