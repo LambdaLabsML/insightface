@@ -151,7 +151,7 @@ def cli_main():
         mode="min",
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
     trainer = pl.Trainer(
         gpus=args.num_gpus,
         accelerator="cuda",

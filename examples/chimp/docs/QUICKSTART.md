@@ -191,12 +191,12 @@ source .venv-insightface/bin/activate
 
 ```bash
 export root_dir=/home/ubuntu/insightface
-export img_dir="${root_dir}/insightface_assets/data/chimp_40_scrfd_10g_0.3_1.5"
+export dataset_dir="${root_dir}/insightface_assets/data/chimp_40_scrfd_10g_0.3_1.5_dataset"
 export model_dir="${root_dir}/insightface_assets/models"
 
 python "${root_dir}/insightface/examples/chimp/trainer_synthetics.py" \
 --batch_size 8 \
---root "${img_dir}" \
+--root "${dataset_dir}" \
 --pre-trained-path "${model_dir}/synthetic_resnet50d.ckpt" \
 --output-ckpt-path "${model_dir}/synthetic_resnet50d_ft0.ckpt" \
 --num-epochs 1000 \
