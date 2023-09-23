@@ -55,8 +55,8 @@ flip_parts = (
     [60, 56],
 )
 
-app = FaceAnalysis()
-app.prepare(ctx_id=0, det_size=(224, 224))
+# app = FaceAnalysis()
+# app.prepare(ctx_id=0, det_size=(224, 224))
 
 
 def softmax(z):
