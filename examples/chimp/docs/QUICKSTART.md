@@ -80,7 +80,7 @@ python "${root_dir}/insightface/examples/chimp/create_data.py" \
 --stage ldmks \
 --input_image_dir "${img_dir}" \
 --ldmks_detector_path "${models_dir}/synthetic_resnet50d.ckpt" \
---bbox_detector_path "${models_dir}/scrfd_10g.onnx" # ldkms should run bbox detection automatically but it doesnt ?
+--bbox_detector_path "${models_dir}/scrfd_10g.onnx"
 ```
 ### Finetuning
 
