@@ -37,9 +37,9 @@ storage
 |		|   |-- chimp_50
 |		|   |-- chimp_2000_0
 |		|-- models
-|				|-- synthetic_resnet50d.ckpt (ldkms detector)
-|               |-- scrfd_10g.onnx (bbox detector)
-|               |-- model.path (only use if you need to re-generate the onnx file for some reason)
+|			|-- synthetic_resnet50d.ckpt (ldkms detector)
+|			|-- scrfd_10g.onnx (bbox detector)
+|			|-- model.path (only use if you need to re-generate the onnx file for some reason)
 |-- .insightface-venv
 |-- insightface
 ```
