@@ -13,6 +13,8 @@ python benchmark.py \
     --flag-detect
 ```
 
+Results will be saved to `./data/Chimp_2_ft_mouth800`
+
 or pass `--flag-save` to save the augmented images.
 
 ```
@@ -24,6 +26,8 @@ python benchmark.py \
     --flag-save
 ```
 
+Results will be saved to `./data/Chimp_2_ft_mouth800/imgs_aug`
+
 ### Run evaluation
 
 ```
@@ -31,9 +35,13 @@ python evaluate.py \
     --input-dir ./data/Chimp_2_ft_mouth800
 ```
 
+Results will be saved to `./data/Chimp_2_ft_mouth800/std.pickle`
+
 ### Run visualization
 
 ```
 python visualize.py \
     --input-dir ./data/Chimp_2_ft_mouth800
 ```
+
+Results will be saved to `./data/Chimp_2_ft_mouth800/imgs_aggr`
