@@ -24,8 +24,8 @@ def draw_landmarks_canonical(img_path, data, trans, output_dir):
     plt.savefig(output_dir + "/imgs_aggr/" + name + '.png', bbox_inches='tight')
 
 def main(args):
-    file_list_transform = os.path.join(args.input_dir, 'list_transform_' + args.model_name + '.pickle')
-    file_list_image = os.path.join(args.input_dir, 'list_image_' + args.model_name + '.pickle')
+    file_list_transform = os.path.join(args.input_dir, 'list_transform' + '.pickle')
+    file_list_image = os.path.join(args.input_dir, 'list_image' + '.pickle')
 
     Path(args.input_dir + "/imgs_aggr").mkdir(parents=True, exist_ok=True)
 
@@ -44,8 +44,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input-dir", help="Input folder", dest="input_dir", type=str)
-
-    parser.add_argument("--model-name", help="Name of detection model", dest="model_name", type=str)
 
     args = parser.parse_args()
     main(args)

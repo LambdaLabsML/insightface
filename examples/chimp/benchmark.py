@@ -150,10 +150,10 @@ def main(args):
 
         os.makedirs(args.output_dir, exist_ok=True)
 
-        with open(os.path.join(args.output_dir, 'list_transform_' + args.model_name + '.pickle'), 'wb') as handle:
+        with open(os.path.join(args.output_dir, 'list_transform' + '.pickle'), 'wb') as handle:
             pickle.dump(list_transform, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(os.path.join(args.output_dir, 'list_image_' + args.model_name + '.pickle'), 'wb') as handle:
+        with open(os.path.join(args.output_dir, 'list_image' + '.pickle'), 'wb') as handle:
             pickle.dump(list_image, handle, protocol=pickle.HIGHEST_PROTOCOL)
     else:
         for f in glob.glob(os.path.join(args.input_dir, "*.") + args.format):
@@ -187,13 +187,6 @@ if __name__ == "__main__":
         "--output-dir",
         help="Output folder",
         dest="output_dir",
-        type=str
-    )
-
-    parser.add_argument(
-        "--model-name",
-        help="Name of detection model",
-        dest="model_name",
         type=str
     )
 

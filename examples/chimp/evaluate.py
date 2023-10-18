@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 
 
-def compute_AV(data):
+def compute_std(data):
     
     data_sum = np.sum(data, axis=(1, 2))
     idx_nonzero = np.nonzero(data_sum)
@@ -17,8 +17,8 @@ def compute_AV(data):
     return av
 
 def main(args):
-    file_list_transform = os.path.join(args.input_dir, 'list_transform_' + args.model_name + '.pickle')
-    file_list_image = os.path.join(args.input_dir, 'list_image_' + args.model_name + '.pickle')
+    file_list_transform = os.path.join(args.input_dir, 'list_transform' + '.pickle')
+    file_list_image = os.path.join(args.input_dir, 'list_image' + '.pickle')
 
     with open(file_list_transform, 'rb') as handle:
         list_transform = pickle.load(handle)
@@ -30,20 +30,18 @@ def main(args):
     for img in list_image:
         av_trans = {}
         for trans in list_image[img]:
-            av_trans[trans] = compute_AV(list_image[img][trans])
+            av_trans[trans] = compute_std(list_image[img][trans])
         av_image[img] = av_trans
     
     print(av_image)
 
-    with open(os.path.join(args.input_dir, args.model_name + '_av.pickle'), 'wb') as handle:
+    with open(os.path.join(args.input_dir, 'std.pickle'), 'wb') as handle:
         pickle.dump(av_image, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input-dir", help="Input folder", dest="input_dir", type=str)
-
-    parser.add_argument("--model-name", help="Name of detection model", dest="model_name", type=str)
 
     args = parser.parse_args()
     main(args)
