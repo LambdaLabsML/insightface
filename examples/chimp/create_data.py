@@ -161,7 +161,7 @@ if __name__ == "__main__":
         default="/home/ubuntu/Chimp/models/synthetic_resnet50d.ckpt",
     )
     parser.add_argument("--bbox_confidence", type=float, default=0.3)
-    parser.add_argument("--bbox_size_scale", type=float, default=2.5)
+    parser.add_argument("--bbox_size_scale", type=float, default=1.5)
     parser.add_argument("--stage", choices=["bbox", "ldmks", "dataset"], default="bbox")
     parser.add_argument("--bbox-method", choices=["app", "scrfd"], default="scrfd")
     parser.add_argument("--dataset_postfix", type=str, default="_dataset")
